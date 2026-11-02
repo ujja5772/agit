@@ -1,0 +1,17 @@
+{
+  "name": "아지트",
+  "short_name": "아지트",
+  "description": "나만의 아늑한 아지트에서 쉬고, 친구와 함께 노는 힐링 웹앱",
+  "lang": "ko",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f3ebe0",
+  "theme_color": "#3b2a20",
+  "icons": [
+    {"src": "icon-192.png", "sizes": "192x192", "type": "image/png"},
+    {"src": "icon-512.png", "sizes": "512x512", "type": "image/png"},
+    {"src": "icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable"}
+  ]
+}
