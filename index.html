@@ -283,6 +283,18 @@ input[type=text],input[type=email],input[type=password]{font-family:var(--body);
 .auth .msg{min-height:1.4em;font-size:.86rem;color:#b55a6e;margin:0}
 .auth .msg.ok{color:var(--sage)}
 .logout{margin-top:10px;width:100%}
+.gchips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
+.gchips button{padding:5px 12px;border-radius:999px;font-size:.86rem}
+.gnow{background:var(--paper);border-radius:14px;padding:10px 12px;display:flex;flex-direction:column;gap:8px}
+.gnow .code{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.gnow .code b{font-family:ui-monospace,Menlo,monospace;font-size:1.3rem;letter-spacing:.18em;background:#fff;border:1.5px dashed var(--honey);border-radius:10px;padding:2px 10px;user-select:all}
+.gnow .row{display:flex;gap:6px;flex-wrap:wrap}
+.gnow .row button{padding:5px 10px;font-size:.84rem}
+.gmore{margin-top:10px}
+.gmore summary{cursor:pointer;color:var(--wood);font-size:.9rem;padding:4px 0}
+.gform{display:flex;flex-direction:column;gap:4px;margin-top:8px}
+.grow{display:flex;gap:6px}.grow input{flex:1}
+#gCode{text-transform:uppercase;letter-spacing:.15em}
 .venues img{width:64px;height:44px;object-fit:cover;border-radius:8px}
 .dish{position:absolute;transform:translate(-50%,-50%);font-size:20px;z-index:3;pointer-events:none;filter:drop-shadow(0 2px 2px rgba(0,0,0,.35));animation:popin .4s cubic-bezier(.3,1.4,.5,1)}
 .chatform .em{padding:6px 5px}
@@ -381,7 +393,16 @@ input[type=text],input[type=email],input[type=password]{font-family:var(--body);
 
   <!-- 친구 -->
   <section class="page" id="tab-friends" hidden>
-    <div class="card"><h2>함께 모이는 곳<small>누구나 들어올 수 있어요</small></h2><ul class="list friends venues" id="venues"></ul></div>
+    <div class="card" id="groupCard"><h2>우리 그룹<small id="groupSub"></small></h2>
+      <div class="gchips" id="gchips"></div>
+      <div class="gnow" id="gnow"></div>
+      <details class="gmore" id="gmore"><summary>그룹 만들기 · 코드로 참여하기</summary>
+        <form class="gform" id="gCreate"><label for="gName" class="muted">새 그룹 이름</label><div class="grow"><input type="text" id="gName" maxlength="20" placeholder="예: 퇴근 후 포차 모임"><button class="accent" type="submit">만들기</button></div></form>
+        <form class="gform" id="gJoin"><label for="gCode" class="muted">친구에게 받은 초대 코드</label><div class="grow"><input type="text" id="gCode" maxlength="6" placeholder="예: AB3K7Q" autocapitalize="characters" autocomplete="off"><button type="submit">참여하기</button></div></form>
+        <p class="muted" id="gMsg"></p>
+      </details>
+    </div>
+    <div class="card"><h2>함께 모이는 곳<small id="venueSub">우리 그룹끼리 모여요</small></h2><ul class="list friends venues" id="venues"></ul></div>
     <div class="card"><h2>친구네 놀러 가기<small id="friendSub"></small></h2><ul class="list friends" id="friends"></ul></div>
     <div class="card" id="gbCard"><h2><span id="gbTitle">우리 집 방명록</span><small id="gbSub"></small></h2><ul class="list gb" id="gb"></ul>
       <form class="gbform" id="gbForm" hidden><input type="text" id="gbInput" maxlength="80" placeholder="따뜻한 한마디를 남겨요"><button class="accent" type="submit">남기기</button></form></div>
@@ -763,7 +784,7 @@ function done(msg,e=E.smile,mood=6,full=0){busy=false;talk(msg,e);bump({mood,ful
 async function work(sec,label,e,m,msg,em,mood){busy=true;choices([]);lookO(1.4);await progress(sec,label,e);fxO('✦',4);if(m)mission(m);done(msg,em||E.excited,mood||8)}
 function cheersFx(x,y){fx('🍻',3,0,0,[x,y-sz(y,34)*.75]);clink()}
 const ACTS={
- mailbox(){talk('우체통을 열어 볼까? 동네 소식이 와 있다.',E.wow);choices([['포장마차 가기',()=>goVenue('pocha'),'go'],['바 가기',()=>goVenue('bar')],['전망 카페 가기',()=>goVenue('cafe')],['친구네 놀러 가기',()=>tab('friends')]])},
+ mailbox(){talk('우체통을 열어 볼까? 동네 소식이 와 있다.',E.wow);choices([['포장마차 가기',()=>goVenue('pocha'),'go'],['바 가기',()=>goVenue('bar')],['전망 카페 가기',()=>goVenue('cafe')],['친구네 놀러 가기',()=>tab('friends')],['우리 그룹 · 초대 코드',()=>tab('friends')]])},
  order(){const V=VENUES[venue];if(!V){talk('…');return}talk(pick(['뭐 먹을까? 오늘은 내가 쏜다!','메뉴판을 펼쳤다. 다 맛있어 보여…','주문하시겠어요?']),E.excited);
   choices(V.menu.map(([n,e],i)=>[`${e} ${n}`,()=>orderItem(i)]))},
  seat(){lookO(1.25,-4);talk(pick(['자리에 앉았다. 아, 편하다.','의자를 끌어 앉았다. 오늘 하루 어땠어?','자리 잡았다! 다들 어서 와~']),E.smile);
@@ -1020,9 +1041,10 @@ function ago(ts){const m=Math.round((Date.now()-ts)/60000);if(m<2)return '방금
 function fStreak(att){let n=0;const d=new Date();while(att&&att[ymd(d)]){n++;d.setDate(d.getDate()-1)}return n}
 function renderFriends(){const ul=$('friends');ul.innerHTML='';
  if(!cloud.ok){$('friendSub').textContent='';ul.innerHTML='<li class="empty">로그인하면 친구네 놀러 갈 수 있어요.</li>';return}
- const list=Object.entries(cloud.homes).filter(([id,h])=>id!==cloud.id&&h.name).sort((a,b)=>(b[1].updated||0)-(a[1].updated||0));
+ if(!grp.cur){$('friendSub').textContent='';ul.innerHTML='<li class="empty">그룹에 들어가면 같은 그룹 친구들의 집이 여기 보여요.</li>';return}
+ const list=Object.entries(cloud.homes).filter(([id,h])=>id!==cloud.id&&h.name&&grp.members.has(id)).sort((a,b)=>(b[1].updated||0)-(a[1].updated||0));
  $('friendSub').textContent=list.length?`${list.length}명`:'';
- if(!list.length){ul.innerHTML='<li class="empty">아직 놀러 갈 친구네가 없어요. 아지트 주소를 친구에게 보내 주면, 친구가 가입하는 순간 여기에 친구네 집이 생겨요.</li>';return}
+ if(!list.length){ul.innerHTML='<li class="empty">아직 그룹에 나 혼자예요. 위의 초대 링크를 친구에게 보내 주세요.</li>';return}
  list.forEach(([id,h])=>{const li=document.createElement('li');li.innerHTML=`<img alt=""><div class="who"><b></b><small></small></div>`;
   li.querySelector('img').src=IMG[`c${h.char||0}_o${h.outfit||0}`];li.querySelector('b').textContent=`${h.name}의 아지트`;
   const md=(h.mis&&h.mis.day===TODAY&&h.mis.done)?h.mis.done.length:0;
@@ -1039,7 +1061,7 @@ function renderFScraps(){const c=$('fScrapCard');if(!visiting){c.hidden=true;ret
  if(!list.length){ul.innerHTML='<li class="empty">아직 모은 문장이 없대요.</li>';return}
  list.forEach(s=>{const li=document.createElement('li');li.innerHTML='<p></p><small></small>';li.querySelector('p').textContent=s.x;li.querySelector('small').textContent=`「${s.b}」`;
   const b=document.createElement('button');b.className='take';b.textContent='♥ 내 스크랩북에 담기';b.onclick=()=>{if(addScrap(s.x,s.b,f.name||'친구'))toast('내 스크랩북에 담았어요');else toast('이미 담아 둔 문장이에요')};li.appendChild(b);ul.appendChild(li)})}
-function visit(id){loadHomes();venue=null;if(!cloud.homes[id])return;visiting=id;$('visitBar').hidden=false;$('visitText').textContent=`${cloud.homes[id].name}님의 아지트에 놀러 왔어요`;
+function visit(id){loadHomes();venue=null;if(!grp.members.has(id)){toast('같은 그룹 친구네만 놀러 갈 수 있어요');return}if(!cloud.homes[id])return;visiting=id;$('visitBar').hidden=false;$('visitText').textContent=`${cloud.homes[id].name}님의 아지트에 놀러 왔어요`;
  cloud.visitGb=[];loadGb(id);
  tab('home');const fr=cloud.homes[id].room;go(ROOMS[fr]?fr:'home');enterHouse(id)}
 function leaveVisit(){visiting=null;$('visitBar').hidden=true;go('home');renderGb();renderFScraps();enterHouse(cloud.id)}
@@ -1078,13 +1100,56 @@ function drums(after){if(muted||!audio()){setTimeout(after,600);return}let t=ac.
   else if(c==='S'||c==='H'||c==='C'){const src=ac.createBufferSource();src.buffer=noiseBuf();const f=ac.createBiquadFilter();f.type='highpass';f.frequency.value=c==='S'?1500:6000;const g=ac.createGain();const d=c==='C'?.6:c==='S'?.15:.05;
    g.gain.setValueAtTime(c==='H'?.08:.25,t);g.gain.exponentialRampToValueAtTime(.001,t+d);src.connect(f).connect(g).connect(master);src.start(t,Math.random(),d+.05)}
   t+=.16}setTimeout(after,(t-ac.currentTime)*1000)}
-function goVenue(v){if(!VENUES[v])return;if(visiting){visiting=null;renderGb();renderFScraps()}venue=v;$('visitBar').hidden=false;$('visitText').textContent=`${VENUES[v].name}에 왔어요 · 누구나 모일 수 있는 곳`;
+function goVenue(v){if(!VENUES[v])return;if(visiting){visiting=null;renderGb();renderFScraps()}venue=v;$('visitBar').hidden=false;$('visitText').textContent=grp.cur?`${VENUES[v].name}에 왔어요 · ${curG()?curG().name:'우리 그룹'} 모임`:`${VENUES[v].name}에 왔어요 · 그룹에 들어가면 친구와 함께할 수 있어요`;
  tab('home');go(VENUES[v].start);enterHouse(cloud.id)}
 function leaveVenue(){venue=null;$('visitBar').hidden=true;go(HOUSES[S.house|0].start);enterHouse(cloud.id)}
 function venueCount(v){if(!live.lobby)return 0;return live.lobby.peers().filter(p=>p.presence&&p.presence.at==='v:'+v).length}
-function renderVenues(){const ul=$('venues');if(!ul)return;ul.innerHTML='';Object.entries(VENUES).forEach(([k,V])=>{const n=venueCount(k);const li=document.createElement('li');
+function renderVenues(){const ul=$('venues');if(!ul)return;ul.innerHTML='';$('venueSub').textContent=curG()?`'${curG().name}' 그룹끼리 모여요`:'그룹에 들어가면 친구와 함께해요';Object.entries(VENUES).forEach(([k,V])=>{const n=venueCount(k);const li=document.createElement('li');
  li.innerHTML='<img alt=""><div class="who"><b></b><small></small></div>';li.querySelector('img').src=IMG['r_'+V.img];li.querySelector('b').textContent=V.name;
  li.querySelector('small').textContent=(n?`🟢 지금 ${n}명 · `:'')+V.sub;const b=document.createElement('button');b.textContent=venue===k?'여기 있어요':'가기';b.disabled=venue===k;if(n)b.className='accent';b.onclick=()=>goVenue(k);li.appendChild(b);ul.appendChild(li)})}
+
+
+/* ---------- 그룹 (같은 그룹끼리만 보여요) ---------- */
+const grp={list:[],cur:null,members:new Set(),joinCode:null};
+const gKey=()=>'agit-group:'+cloud.id;
+const curG=()=>grp.list.find(g=>g.id===grp.cur)||null;
+const chName=suffix=>grp.cur?`agitg_${grp.cur}_${suffix}`:null;
+async function loadGroups(){if(!cloud.ok)return;const {data,error}=await sb.from('agit_groups').select('id,code,name,owner,created_at').order('created_at');
+ if(error){console.warn(error);return}grp.list=data||[];let want=null;try{want=localStorage.getItem(gKey())}catch(e){}
+ const next=grp.list.some(g=>g.id===want)?want:(grp.list[0]||{}).id||null;await setGroup(next,true)}
+async function loadMembers(){grp.members=new Set();if(!grp.cur)return;const {data}=await sb.from('agit_members').select('user_id').eq('group_id',grp.cur);(data||[]).forEach(r=>grp.members.add(r.user_id))}
+async function setGroup(id,quiet){const changed=grp.cur!==id;grp.cur=id;try{if(id)localStorage.setItem(gKey(),id)}catch(e){}
+ await loadMembers();renderGroup();
+ if(changed||!live.lobby){if(live.lobby){try{await live.lobby.leave()}catch(e){}live.lobby=null}
+  if(grp.cur){live.lobby=makeChannel(chName('lobby'));live.lobby.onPeers(()=>{if(!$('tab-friends').hidden){renderFriends();renderVenues()}});live.lobby.presence({at:venue?'v:'+venue:(visiting||cloud.id)})}
+  if(visiting&&!grp.members.has(visiting)){visiting=null;$('visitBar').hidden=true;go(HOUSES[S.house|0].start)}
+  if(S.started){const k=live.house&&live.house.name;if(live.house){try{await live.house.leave()}catch(e){}live.house=null;live.token++;clearPeers()}enterHouse(visiting||cloud.id)}}
+ loadHomes();renderFriends();renderVenues();if(!quiet&&curG())toast(`'${curG().name}' 그룹으로 바꿨어요`)}
+function inviteLink(code){return location.origin+location.pathname+'?join='+code}
+function renderGroup(){const chips=$('gchips'),now=$('gnow');chips.innerHTML='';now.innerHTML='';
+ $('groupSub').textContent=grp.list.length?`${grp.list.length}개 그룹`:'';
+ grp.list.forEach(g=>{const b=document.createElement('button');b.type='button';b.textContent=g.name;b.setAttribute('aria-pressed',g.id===grp.cur);b.onclick=()=>setGroup(g.id);chips.appendChild(b)});
+ const g=curG();$('gmore').open=!g;
+ if(!g){now.innerHTML='<p class="muted" style="margin:0">아직 그룹이 없어요. 그룹을 만들어 초대 코드를 친구에게 보내거나, 친구에게 받은 코드로 참여해 주세요. 같은 그룹 친구들만 서로의 집과 모임 장소에서 만날 수 있어요.</p>';chips.hidden=true;return}
+ chips.hidden=grp.list.length<2;
+ now.innerHTML='<div><b class="gname"></b> <span class="muted gcount"></span></div><div class="code"><span class="muted">초대 코드</span><b class="gcode"></b></div><div class="row"><button type="button" class="accent cp1">초대 링크 복사</button><button type="button" class="cp2">코드만 복사</button><button type="button" class="leave">그룹 나가기</button></div>';
+ now.querySelector('.gname').textContent=g.name;now.querySelector('.gcount').textContent=`· ${grp.members.size}명`;now.querySelector('.gcode').textContent=g.code;
+ const copy=async(t,msg)=>{try{await navigator.clipboard.writeText(t);toast(msg)}catch(e){prompt('복사해서 친구에게 보내 주세요',t)}};
+ now.querySelector('.cp1').onclick=()=>copy(`아지트에 놀러 와! 이 링크로 들어오면 우리 그룹에 바로 참여돼요.\n${inviteLink(g.code)}\n(초대 코드: ${g.code})`,'초대 링크를 복사했어요');
+ now.querySelector('.cp2').onclick=()=>copy(g.code,'초대 코드를 복사했어요');
+ const lv=now.querySelector('.leave');let armed=false;lv.onclick=async()=>{if(!armed){armed=true;lv.textContent='정말 나갈까요? 한 번 더 누르기';lv.classList.add('accent');setTimeout(()=>{armed=false;lv.textContent='그룹 나가기';lv.classList.remove('accent')},4000);return}
+  const {error}=await sb.from('agit_members').delete().eq('group_id',g.id).eq('user_id',cloud.id);if(error){toast('나가지 못했어요. 다시 해 주세요');return}
+  toast(`'${g.name}' 그룹에서 나왔어요`);try{localStorage.removeItem(gKey())}catch(e){}loadGroups()}}
+const GERR=[[/no such group/,'그런 코드의 그룹이 없어요. 코드를 다시 확인해 주세요.'],[/group full/,'그룹 인원(30명)이 꽉 찼어요.'],[/too many groups/,'그룹은 10개까지 만들 수 있어요.'],[/bad name/,'그룹 이름을 1~20자로 적어 주세요.']];
+const gErr=e=>{const t=(e&&e.message)||'';for(const[re,k]of GERR)if(re.test(t))return k;return '잠시 문제가 생겼어요. 다시 해 주세요.'};
+$('gCreate').onsubmit=async e=>{e.preventDefault();const n=$('gName').value.trim();if(!n){$('gMsg').textContent='그룹 이름을 적어 주세요.';return}
+ const {data,error}=await sb.rpc('agit_create_group',{gname:n});if(error){$('gMsg').textContent=gErr(error);return}
+ $('gName').value='';$('gMsg').textContent='';if(!grp.list.some(g=>g.id===data.id))grp.list.push(data);await setGroup(data.id,true);toast(`'${data.name}' 그룹을 만들었어요. 초대 코드를 친구에게 보내 주세요!`)};
+async function joinCode(code){code=(code||'').toUpperCase().replace(/[^A-Z0-9]/g,'');if(code.length!==6){$('gMsg').textContent='초대 코드 6자리를 적어 주세요.';return false}
+ const {data,error}=await sb.rpc('agit_join_group',{gcode:code});if(error){$('gMsg').textContent=gErr(error);toast(gErr(error));return false}
+ $('gMsg').textContent='';if(!grp.list.some(g=>g.id===data.id))grp.list.push(data);await setGroup(data.id,true);toast(`'${data.name}' 그룹에 참여했어요!`);return true}
+$('gJoin').onsubmit=async e=>{e.preventDefault();if(await joinCode($('gCode').value))$('gCode').value=''};
+try{const q=new URLSearchParams(location.search).get('join');if(q){grp.joinCode=q;history.replaceState(null,'',location.pathname)}}catch(e){}
 
 /* ---------- 함께 있기 (실시간) ---------- */
 const EMOTES=['👋','♥','✨','🍻','😂'];
@@ -1107,14 +1172,14 @@ function makeChannel(name){
  return api}
 function houseKey(id){return 'home-'+hash(String(id)).toString(36)+hash('x'+id).toString(36)}
 async function enterHouse(hostId){
- if(!cloud.ok||!hostId)return;const key=venue?'agit-venue-'+venue:'agit-'+houseKey(hostId);if(live.house&&live.house.name===key)return;
+ if(!cloud.ok||!hostId)return;const key=chName(venue?'venue-'+venue:'home-'+houseKey(hostId));if(!key){$('chatbar').hidden=true;return}if(live.house&&live.house.name===key)return;
  const my=++live.token;live.unsubs.forEach(u=>{try{u()}catch(e){}});live.unsubs=[];const old=live.house;live.house=null;live.ready=false;clearPeers();
  if(old){try{await old.leave()}catch(e){}}
  try{const h=makeChannel(key);h.presence(presenceObj());
   const un=[h.onPeers(onHousePeers),h.on('chat',onChat),h.on('emote',onEmote),h.on('order',onOrder)];
   live.house=h;live.hostId=hostId;live.unsubs=un;
   await h.ready;if(my!==live.token){un.forEach(u=>u());h.leave();return}
-  $('chatlog').innerHTML='';sysLine(venue?`${VENUES[venue].name}에 들어왔어요. 여기 있는 사람 누구나 함께 이야기할 수 있어요.`:hostId===cloud.id?'우리 집 문이 열렸어요. 친구가 놀러 오면 여기서 함께 이야기할 수 있어요.':`${(cloud.homes[hostId]||{}).name||'친구'}네 집에 들어왔어요. 인사해 볼까요?`);
+  $('chatlog').innerHTML='';sysLine(venue?`${VENUES[venue].name}에 들어왔어요. '${curG()?curG().name:''}' 그룹 친구들과 함께 이야기할 수 있어요.`:hostId===cloud.id?'우리 집 문이 열렸어요. 친구가 놀러 오면 여기서 함께 이야기할 수 있어요.':`${(cloud.homes[hostId]||{}).name||'친구'}네 집에 들어왔어요. 인사해 볼까요?`);
   $('chatbar').hidden=false;$('houseLabel').textContent=venue?VENUES[venue].name:hostId===cloud.id?'우리 집':`${(cloud.homes[hostId]||{}).name||'친구'}네`;
   sendPresence();if(live.lobby)live.lobby.presence({at:venue?'v:'+venue:hostId});setTimeout(()=>{if(my===live.token)live.ready=true},2500);renderPeers()}
  catch(e){console.warn('room',e);if(my===live.token){$('chatbar').hidden=true;if(live.house){live.house.leave();live.house=null}}}}
@@ -1231,10 +1296,10 @@ async function onLogin(user){
  away();if(S.house==null||!HOUSES[S.house])S.house=0;
  setNote();loadCloudDiary();loadHomes();loadGb(user.id);
  try{sb.realtime.setAuth((await sb.auth.getSession()).data.session.access_token)}catch(e){}
- live.lobby=makeChannel('agit-lobby');live.lobby.onPeers(()=>{if(!$('tab-friends').hidden){renderFriends();renderVenues()}});live.lobby.presence({at:user.id});
+ await loadGroups();if(grp.joinCode){const c=grp.joinCode;grp.joinCode=null;if(await joinCode(c)&&S.started)tab('friends')}
  if(!S.started){openWelcome();return}
  ensureMissions();go(S.room);markAttend();renderChips();catWander();
- talk(`어서 와, ${myName()}. 오늘 하루도 수고했어.`,E.happy);enterHouse(user.id);save()}
+ talk(`어서 와, ${myName()}. 오늘 하루도 수고했어.`,E.happy);enterHouse(user.id);save();if(!grp.list.length)setTimeout(()=>toast('친구 탭에서 그룹을 만들거나 초대 코드로 참여해 보세요'),2500)}
 sb.auth.onAuthStateChange((ev,session)=>{if(session&&session.user&&(ev==='SIGNED_IN'||ev==='INITIAL_SESSION'))setTimeout(()=>onLogin(session.user),0);
  if(session&&ev==='TOKEN_REFRESHED'){try{sb.realtime.setAuth(session.access_token)}catch(e){}}});
 setInterval(()=>{if(cloud.ok&&!$('tab-friends').hidden){loadHomes();loadGb(visiting||cloud.id)}},45000);
